@@ -17,20 +17,42 @@ pipeline {
                           userRemoteConfigs: [[url: 'https://github.com/shivambhamare/CICD']]])
             }
         }
-        stage('List Files') {
+        stage('List Workspace Files') {
             steps {
-                sh 'ls -l'
+                script {
+                    // List files to verify the presence of pom.xml and modules
+                    sh 'ls -R'
+                }
             }
         }
         stage('Build Application') {
             steps {
-                sh 'mvn clean package'
+                script {
+                    // Build the entire project
+                    sh 'mvn clean package'
+                }
             }
         }
         stage('Test Application') {
             steps {
-                sh 'mvn test'
+                script {
+                    // Run tests for the entire project
+                    sh 'mvn test'
+                }
             }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+            junit '**/target/surefire-reports/*.xml'
+        }
+        failure {
+            // Notify of the failure (if using email notifications or other methods)
+            echo 'Build failed!'
+        }
+        success {
+            echo 'Build succeeded!'
         }
     }
 }
