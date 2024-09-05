@@ -17,6 +17,11 @@ pipeline {
                           userRemoteConfigs: [[url: 'https://github.com/shivambhamare/CICD']]])
             }
         }
+        stage('List Files') {
+            steps {
+                sh 'ls -l'
+            }
+        }
         stage('Build Application') {
             steps {
                 sh 'mvn clean package'
