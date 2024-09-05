@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'Jenkins-Agent' }
+    agent any
     tools {
         jdk 'Java17'
         maven 'Maven3'
@@ -22,7 +22,7 @@ pipeline {
 
         stage("Checkout from SCM"){
                 steps {
-                    git branch: 'main', credentialsId: 'github', url: 'https://github.com/Ashfaque-9x/register-app'
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: 'https://github.com/shivambhamare/CICD']]])
                 }
         }
 
