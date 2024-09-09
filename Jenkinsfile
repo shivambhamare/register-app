@@ -9,8 +9,8 @@ pipeline {
             RELEASE = "1.0.0"
             DOCKER_USER = "shivambhamare"
             DOCKER_PASS = 'dockerhubpwd'
-            IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
-            IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
+            IMAGE_NAME = 'shivambhamare/registerapp'
+       	    IMAGE_TAG = "1.${env.BUILD_ID}"
     }
     stages {
         stage('Cleanup Workspace') {
@@ -53,16 +53,19 @@ pipeline {
         }
 	stage('Build Docker Image') {
             steps {
-                sh 'docker build -t shivambhamare/registerapp:1.$BUILD_ID .'
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
             }
         }
-        stage('push docker image'){
-            steps{
-                script{
-                    withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
-                    sh 'docker login -u shivambhamare -p ${dockerhubpwd}'
-}
-                    sh 'docker push shivambhamare/registerapp:1.$BUILD_ID '
+      stage('Push Docker Image') {
+            steps {
+                script {
+                    // Login to Docker Hub using credentials
+                    withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'DOCKERHUB_PASSWORD')]) {
+                        sh 'echo $DOCKERHUB_PASSWORD | docker login -u shivambhamare --password-stdin'
+                    }
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${IMAGE_NAME}:latest"
                 }
             }
         }
@@ -72,6 +75,14 @@ pipeline {
 	            sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image shivambhamare/registerapp:1.$BUILD_ID --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
                }
            }
+       }
+	stage ('Cleanup Artifacts') {
+           steps {
+               script {
+                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+                    sh "docker rmi ${IMAGE_NAME}:latest || true"
+               }
+          }
        }
     }
 }
