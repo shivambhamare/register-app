@@ -8,7 +8,7 @@ pipeline {
         APP_NAME = "register-app-pipeline"
         RELEASE = "1.0.0"
         DOCKER_USER = "shivambhamare"
-        DOCKER_PASS = "dockerhubpwd"
+        DOCKER_PASS = 'dockerhubpwd'
         IMAGE_NAME = 'shivambhamare/registerapp'
         IMAGE_TAG = "1.${env.BUILD_ID}"
     }
@@ -35,24 +35,57 @@ pipeline {
                 sh 'mvn test'
             }
         }
-        stage('SonarQube Analysis') {
+        stage("SonarQube Analysis") {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
                         sh "mvn sonar:sonar"
                     }
-                }	
+                }
             }
         }
-        stage('Quality Gate') {
+        stage("Quality Gate") {
             steps {
                 script {
                     def qg = waitForQualityGate()
                     if (qg.status != 'OK') {
-                        error "Quality Gate failed: ${qg.status}"
+                        error "Quality Gate failed: ${qg.status} - Check SonarQube logs for details."
+                    }
+                }
+                        }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Login to Docker Hub using credentials
+                    withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'DOCKERHUB_PASSWORD')]) {
+                        sh 'echo $DOCKERHUB_PASSWORD | docker login -u shivambhamare --password-stdin'
+                    }
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                }
+            }
+        }
+        stage("Trivy Scan") {
+            steps {
+                script {
+                    sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${IMAGE_NAME}:${IMAGE_TAG} --no-progress --scanners vuln --exit-code 0 --severity HIGH,CRITICAL --format table'
+                }
+            }
+        }
+        stage('Cleanup Artifacts') {
+            steps {
+                script {
+                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+                    sh "docker rmi ${IMAGE_NAME}:latest || true"
                 }
             }
         }
     }
-  }
 }
+
