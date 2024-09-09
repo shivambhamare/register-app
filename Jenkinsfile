@@ -51,19 +51,20 @@ pipeline {
                 }	
             }
         }
-	  stage("Build & Push Docker Image") {
+	stage('Build Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('',DOCKER_PASS) {
-                        docker_image = docker.build "${IMAGE_NAME}"
-                    }
-
-                    docker.withRegistry('',DOCKER_PASS) {
-                        docker_image.push("${IMAGE_TAG}")
-                        docker_image.push('latest')
-                    }
+                sh 'docker build -t shivambhamare/registerapp:1.$BUILD_ID .'
+            }
+        }
+        stage('push docker image'){
+            steps{
+                script{
+                    withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
+                    sh 'docker login -u shivambhamare -p ${dockerhubpwd}'
+}
+                    sh 'docker push shivambhamare/registerapp:1.$BUILD_ID '
                 }
             }
-         }
+        }
     }
 }
