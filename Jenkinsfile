@@ -65,7 +65,6 @@ pipeline {
                         sh 'echo $DOCKERHUB_PASSWORD | docker login -u shivambhamare --password-stdin'
                     }
                     sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh "docker push ${IMAGE_NAME}:latest"
                 }
             }
         }
