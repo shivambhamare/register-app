@@ -61,11 +61,10 @@ pipeline {
             steps {
                 script {
                     // Login to Docker Hub using credentials
-                    withCredentials([usernamePassword(credentialsId: 'dockerhubpwd', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
+                    sh 'docker login -u shivambhamare -p ${dockerhubpwd}'
                     }
                     sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh "docker push ${IMAGE_NAME}:latest"
                 }
             }
         }
